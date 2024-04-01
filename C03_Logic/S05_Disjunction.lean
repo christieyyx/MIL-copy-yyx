@@ -59,19 +59,91 @@ example : x < |y| → x < y ∨ x < -y := by
 namespace MyAbs
 
 theorem le_abs_self (x : ℝ) : x ≤ |x| := by
-  sorry
+  rcases le_or_gt 0 x with h | h
+  . rw [abs_of_nonneg h]
+  . rw [abs_of_neg h]
+    have: -x > 0 := by linarith
+    have h1: x < -x := by
+      apply lt_trans h this
+    linarith[h1]
+
 
 theorem neg_le_abs_self (x : ℝ) : -x ≤ |x| := by
-  sorry
+  rcases le_or_gt 0 x with h | h
+  . rw [abs_of_nonneg h]
+    have: -x ≤ 0 := by linarith
+    apply ge_trans h this
+  . rw [abs_of_neg h]
 
 theorem abs_add (x y : ℝ) : |x + y| ≤ |x| + |y| := by
-  sorry
+  rcases le_or_gt 0 x with h1 | h2
+  rcases le_or_gt 0 y with h3 | h4
+  . rw [abs_of_nonneg h1, abs_of_nonneg h3]
+    have: x + y ≥ 0:= by
+      rw[← add_zero 0]
+      apply add_le_add h1 h3
+    rw [abs_of_nonneg this]
+  . rw[abs_of_nonneg h1, abs_of_neg h4]
+    rcases le_or_gt 0 (x+y) with h | h
+    rw[abs_of_nonneg h]
+    linarith
+    rw[abs_of_neg h]
+    linarith
+  rcases le_or_gt 0 y with h3 | h4
+  . rw[abs_of_nonneg h3, abs_of_neg h2]
+    rcases le_or_gt 0 (x+y) with h | h
+    rw[abs_of_nonneg h]
+    linarith
+    rw[abs_of_neg h]
+    linarith
+  . rw[abs_of_neg h4, abs_of_neg h2]
+    rcases le_or_gt 0 (x+y) with h | h
+    rw[abs_of_nonneg h]
+    linarith
+    rw[abs_of_neg h]
+    linarith
+
 
 theorem lt_abs : x < |y| ↔ x < y ∨ x < -y := by
-  sorry
+  constructor
+  . intro h
+    rcases le_or_gt 0 y with h' | h'
+    . left
+      have: |y| = y := by apply abs_of_nonneg h'
+      have: y = |y| := by linarith
+      rw[this]
+      exact h
+    . right
+      have: |y| = -y := by apply abs_of_neg h'
+      rw[← this]
+      exact h
+  . intro h
+    rcases h with h' | h'
+    . have: y ≤ |y| := by apply le_abs_self
+      linarith
+    . have: -y ≤ |y| := by apply neg_le_abs_self
+      linarith
+
 
 theorem abs_lt : |x| < y ↔ -y < x ∧ x < y := by
-  sorry
+  constructor
+  . rcases le_or_gt 0 x with h | h
+    . rw[abs_of_nonneg h]
+      intro h'
+      constructor
+      . linarith
+      . exact h'
+    . rw[abs_of_neg h]
+      intro h'
+      constructor
+      . linarith
+      . linarith
+  . rintro ⟨ h1, h2⟩
+    rcases le_or_gt 0 x with h | h
+    . rw[abs_of_nonneg h]
+      exact h2
+    . rw[abs_of_neg h]
+      linarith
 
 end MyAbs
 
@@ -126,4 +198,3 @@ example (P : Prop) : ¬¬P → P := by
 
 example (P Q : Prop) : P → Q ↔ ¬P ∨ Q := by
   sorry
-
