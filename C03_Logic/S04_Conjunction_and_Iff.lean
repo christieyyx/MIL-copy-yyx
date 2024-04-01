@@ -6,7 +6,8 @@ namespace C03S04
 
 example {x y : ℝ} (h₀ : x ≤ y) (h₁ : ¬y ≤ x) : x ≤ y ∧ x ≠ y := by
   constructor
-  · assumption
+  --· assumption
+  exact h₀
   intro h
   apply h₁
   rw [h]
@@ -63,8 +64,12 @@ example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x :=
   fun h' ↦ h.right (le_antisymm h.left h')
 
-example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m :=
-  sorry
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  rcases h with ⟨h1, h2⟩
+  constructor
+  assumption
+  contrapose! h2
+  exact Nat.dvd_antisymm h1 h2
 
 example : ∃ x : ℝ, 2 < x ∧ x < 4 :=
   ⟨5 / 2, by norm_num, by norm_num⟩
@@ -85,6 +90,7 @@ example : ∃ m n : ℕ, 4 < m ∧ m < n ∧ n < 10 ∧ Nat.Prime m ∧ Nat.Prim
   use 7
   norm_num
 
+-- ask this example
 example {x y : ℝ} : x ≤ y ∧ x ≠ y → x ≤ y ∧ ¬y ≤ x := by
   rintro ⟨h₀, h₁⟩
   use h₀
@@ -101,15 +107,43 @@ example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y := by
 example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y :=
   ⟨fun h₀ h₁ ↦ h₀ (by rw [h₁]), fun h₀ h₁ ↦ h₀ (le_antisymm h h₁)⟩
 
-example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y :=
-  sorry
+example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y := by
+  constructor
+  . intro h
+    rcases h with ⟨h1, h2⟩
+    constructor
+    exact h1
+    contrapose! h2
+    rw[h2]
+  . intro h
+    rcases h with ⟨h1, h2⟩
+    constructor
+    . assumption
+    . contrapose! h2
+      exact le_antisymm h1 h2
 
-theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 :=
-  have h' : x ^ 2 = 0 := by sorry
-  pow_eq_zero h'
 
-example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 :=
-  sorry
+theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 ∧ y = 0 := by
+  constructor
+  have h' : x ^ 2 = 0 := by
+    linarith [pow_two_nonneg x, pow_two_nonneg y]
+  apply pow_eq_zero h'
+  have: y ^ 2  = 0 := by
+    linarith [pow_two_nonneg x, pow_two_nonneg y]
+  apply pow_eq_zero this
+
+example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
+  constructor
+  . intro h
+    constructor
+    apply (aux h).1
+    apply (aux h).2
+  . intro h
+    rcases h with ⟨h1, h2⟩
+    have: x ^ 2 = 0 := by exact sq_eq_zero_iff.2 h1
+    rw[this]
+    simp
+    exact h2
 
 section
 
@@ -130,7 +164,11 @@ theorem not_monotone_iff {f : ℝ → ℝ} : ¬Monotone f ↔ ∃ x y, x ≤ y �
   rfl
 
 example : ¬Monotone fun x : ℝ ↦ -x := by
-  sorry
+  rw[Monotone]
+  push_neg
+  use 1
+  use 2
+  constructor <;> norm_num
 
 section
 variable {α : Type*} [PartialOrder α]
@@ -138,8 +176,19 @@ variable (a b : α)
 
 example : a < b ↔ a ≤ b ∧ a ≠ b := by
   rw [lt_iff_le_not_le]
-  sorry
-
+  constructor
+  . intro h
+    rcases h with ⟨h1, h2⟩
+    constructor
+    exact h1
+    contrapose! h2
+    rw[h2]
+  . intro h
+    rcases h with ⟨h1, h2⟩
+    constructor
+    exact h1
+    contrapose! h2
+    exact le_antisymm h1 h2
 end
 
 section
@@ -148,10 +197,17 @@ variable (a b c : α)
 
 example : ¬a < a := by
   rw [lt_iff_le_not_le]
-  sorry
+  push_neg
+  intro h
+  exact h
 
 example : a < b → b < c → a < c := by
   simp only [lt_iff_le_not_le]
-  sorry
-
+  rintro ⟨h1, h2⟩
+  rintro ⟨h3, h4⟩
+  constructor
+  apply ge_trans h3 h1
+  contrapose! h2
+  --have: b < c := by apply?
+  apply le_trans h3 h2
 end
