@@ -163,24 +163,68 @@ example {m n k : ℕ} (h : m ∣ n ∨ m ∣ k) : m ∣ n * k := by
   . rw [mul_comm, mul_assoc]
     apply dvd_mul_right
 
+--important example
 example {z : ℝ} (h : ∃ x y, z = x ^ 2 + y ^ 2 ∨ z = x ^ 2 + y ^ 2 + 1) : z ≥ 0 := by
-  sorry
+  rcases h with ⟨ a, b, rfl | rfl⟩
+  <;> linarith[sq_nonneg a, sq_nonneg b]
+
 
 example {x : ℝ} (h : x ^ 2 = 1) : x = 1 ∨ x = -1 := by
-  sorry
+  have h1: x^2 - 1 = 0 := by
+    rw[h]
+    ring
+  have h2: (x + 1) * (x - 1) = 0 := by
+    rw[← h1]
+    ring
+  have h3: x + 1 = 0 ∨ x - 1 = 0 := by
+    apply eq_zero_or_eq_zero_of_mul_eq_zero h2
+  rcases h3 with h | h
+  . right
+    linarith
+  . left
+    linarith
+
 
 example {x y : ℝ} (h : x ^ 2 = y ^ 2) : x = y ∨ x = -y := by
-  sorry
+  have h1: x^2 - y^2 = 0 := by
+    rw[h, sub_self]
+  have h2: (x + y)*(x-y) = 0 := by
+    rw[← h1]
+    ring
+  rcases eq_zero_or_eq_zero_of_mul_eq_zero h2 with h' | h'
+  . right
+    apply eq_neg_iff_add_eq_zero.2 h'
+  . left
+    apply eq_of_sub_eq_zero h'
 
 section
 variable {R : Type*} [CommRing R] [IsDomain R]
 variable (x y : R)
 
 example (h : x ^ 2 = 1) : x = 1 ∨ x = -1 := by
-  sorry
+  have h1: x^2 - 1 = 0 := by
+    rw[h]
+    ring
+  have h2: (x + 1) * (x - 1) = 0 := by
+    rw[← h1]
+    ring
+  rcases eq_zero_or_eq_zero_of_mul_eq_zero h2 with h'|h'
+  . right
+    apply eq_neg_iff_add_eq_zero.2 h'
+  . left
+    apply eq_of_sub_eq_zero h'
 
 example (h : x ^ 2 = y ^ 2) : x = y ∨ x = -y := by
-  sorry
+  have h1: x^2 - y^2 = 0 := by
+    rw[h, sub_self]
+  have h2: (x + y)*(x-y) = 0 := by
+    rw[← h1]
+    ring
+  rcases eq_zero_or_eq_zero_of_mul_eq_zero h2 with h'|h'
+  . right
+    apply eq_neg_iff_add_eq_zero.2 h'
+  . left
+    apply eq_of_sub_eq_zero h'
 
 end
 
@@ -197,4 +241,15 @@ example (P : Prop) : ¬¬P → P := by
   contradiction
 
 example (P Q : Prop) : P → Q ↔ ¬P ∨ Q := by
-  sorry
+  constructor
+  . intro h
+    by_cases h' : P
+    . right
+      apply h h'
+    . left
+      exact h'
+  . rintro (h | h)
+    . intro h'
+      apply absurd h' h
+    . intro h'
+      exact h
