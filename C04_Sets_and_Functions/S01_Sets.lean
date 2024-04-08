@@ -4,16 +4,19 @@ import Mathlib.Data.Nat.Parity
 import MIL.Common
 
 section
-variable {α : Type*}
+--variable {α : Type*}
 variable (s t u : Set α)
 open Set
-
+#check α
 example (h : s ⊆ t) : s ∩ u ⊆ t ∩ u := by
   rw [subset_def, inter_def, inter_def]
   rw [subset_def] at h
   simp only [mem_setOf]
   rintro x ⟨xs, xu⟩
-  exact ⟨h _ xs, xu⟩
+  constructor
+  exact h x xs
+  exact xu
+  --exact ⟨h _ xs, xu⟩
 
 example (h : s ⊆ t) : s ∩ u ⊆ t ∩ u := by
   simp only [subset_def, mem_inter_iff] at *
@@ -33,10 +36,10 @@ example : s ∩ (t ∪ u) ⊆ s ∩ t ∪ s ∩ u := by
   have xtu : x ∈ t ∪ u := hx.2
   rcases xtu with xt | xu
   · left
-    show x ∈ s ∩ t
+    --show x ∈ s ∩ t
     exact ⟨xs, xt⟩
   . right
-    show x ∈ s ∩ u
+    --show x ∈ s ∩ u
     exact ⟨xs, xu⟩
 
 example : s ∩ (t ∪ u) ⊆ s ∩ t ∪ s ∩ u := by
@@ -45,7 +48,14 @@ example : s ∩ (t ∪ u) ⊆ s ∩ t ∪ s ∩ u := by
   . right; exact ⟨xs, xu⟩
 
 example : s ∩ t ∪ s ∩ u ⊆ s ∩ (t ∪ u) := by
-  sorry
+  rintro x (⟨xs, xt⟩ | ⟨xs, xu⟩)
+  . use xs
+    left
+    apply xt
+  . use xs
+    right
+    exact xu
+
 example : (s \ t) \ u ⊆ s \ (t ∪ u) := by
   intro x xstu
   have xs : x ∈ s := xstu.1.1
@@ -56,7 +66,7 @@ example : (s \ t) \ u ⊆ s \ (t ∪ u) := by
   intro xtu
   -- x ∈ t ∨ x ∈ u
   rcases xtu with xt | xu
-  · show False; exact xnt xt
+  · show False; contradiction--apply absurd xt xnt
   . show False; exact xnu xu
 
 example : (s \ t) \ u ⊆ s \ (t ∪ u) := by
@@ -65,7 +75,16 @@ example : (s \ t) \ u ⊆ s \ (t ∪ u) := by
   rintro (xt | xu) <;> contradiction
 
 example : s \ (t ∪ u) ⊆ (s \ t) \ u := by
-  sorry
+  rintro x ⟨xs, x1⟩
+  constructor
+  . use xs
+    intro x2
+    exact x1 (Or.inl x2)
+  . contrapose! x1
+    . right
+      exact x1
+
+
 example : s ∩ t = t ∩ s := by
   ext x
   simp only [mem_inter_iff]
@@ -76,26 +95,82 @@ example : s ∩ t = t ∩ s := by
 example : s ∩ t = t ∩ s :=
   Set.ext fun x ↦ ⟨fun ⟨xs, xt⟩ ↦ ⟨xt, xs⟩, fun ⟨xt, xs⟩ ↦ ⟨xs, xt⟩⟩
 
-example : s ∩ t = t ∩ s := by ext x; simp [and_comm]
+example : s ∩ t = t ∩ s := by ext x; apply and_comm --simp [and_comm]
 
 example : s ∩ t = t ∩ s := by
   apply Subset.antisymm
   · rintro x ⟨xs, xt⟩; exact ⟨xt, xs⟩
   . rintro x ⟨xt, xs⟩; exact ⟨xs, xt⟩
 
-example : s ∩ t = t ∩ s :=
-    Subset.antisymm sorry sorry
+example : s ∩ t = t ∩ s := by
+  apply Subset.antisymm
+  · rintro x ⟨xs, xt⟩; exact ⟨xt, xs⟩
+  . rintro x ⟨xt, xs⟩; exact ⟨xs, xt⟩
+
 example : s ∩ (s ∪ t) = s := by
-  sorry
+  ext x
+  constructor
+  . rintro ⟨h1, h2⟩
+    exact h1
+  . intro h
+    use h
+    left
+    exact h
 
 example : s ∪ s ∩ t = s := by
-  sorry
+  ext x
+  constructor
+  . rintro (xs| ⟨ xt , xu⟩)
+    . exact xs
+    . exact xt
+  . intro h
+    left; exact h
 
 example : s \ t ∪ t = s ∪ t := by
-  sorry
+  ext x
+  constructor
+  . rintro (⟨ xs , xnt⟩ | xt)
+    . left; exact xs
+    . right; exact xt
+  by_cases h : x ∈ t
+  . intro
+    right;exact h
+  . rintro (h1|h2)
+    . left
+      use h1
+    . right
+      exact h2
+
+
 
 example : s \ t ∪ t \ s = (s ∪ t) \ (s ∩ t) := by
-  sorry
+  ext x
+  constructor
+  . rintro (⟨h1, h2⟩|⟨h1, h2 ⟩)
+    . constructor
+      . left; exact h1
+      . intro h
+        rcases h with ⟨hm, hn⟩
+        apply absurd hn h2
+    . constructor
+      . right; exact h1
+      . contrapose! h2
+        rcases h2 with ⟨h', h'' ⟩
+        exact h'
+  . rintro ⟨h1|h2, h3⟩
+    . left
+      use h1
+      have : x ∉ t := by
+        contrapose! h3
+        constructor
+        exact h1; exact h3
+      use this
+    . right
+      use h2
+      intro m
+      apply h3
+      use m
+
 
 def evens : Set ℕ :=
   { n | Even n }
@@ -236,4 +311,3 @@ example : ⋂₀ s = ⋂ t ∈ s, t := by
   rfl
 
 end
-
